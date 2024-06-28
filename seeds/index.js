@@ -1,6 +1,6 @@
 // connected to mongoose so we can seed file on its own when we make changes to model or data
 import mongoose from "mongoose";
-import campGround from "../models/campGround.js";
+import campGround from "../models/campground.js";
 import cities from "./cities.js";
 import { places, descriptors } from "./seedHelpers.js";
 

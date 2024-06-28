@@ -1,7 +1,7 @@
 import express from "express"; // add 'type':'module' to package.json
 import path from "path";
 import mongoose from "mongoose";
-import campGround from "./models/campGround.js";
+import campground from "./models/campground.js";
 
 main().catch((err) => console.log(err, "connection error"));
 
@@ -18,10 +18,10 @@ app.set("views", path.join(__dirname, "views"));
 app.get("/", (req, res) => {
   res.render("home");
 });
-app.get("/makecampground", async (req, res) => {
-  const camp = new campGround({ title: "My Backyard", description: 'Cheap camping' });
-  await camp.save();
-  res.send(camp)
+
+app.get("/campgrounds", async (req, res) => {
+  const campgrounds = await campground.find({});
+  res.render("campgrounds/index", { campgrounds });
 });
 
 app.listen(3000, () => {
