@@ -1,7 +1,7 @@
 import express from "express"; // add 'type':'module' to package.json
 import path from "path";
 import mongoose from "mongoose";
-import campground from "./models/campground.js";
+import CampGround from "./models/campground.js";
 
 main().catch((err) => console.log(err, "connection error"));
 
@@ -20,8 +20,14 @@ app.get("/", (req, res) => {
 });
 
 app.get("/campgrounds", async (req, res) => {
-  const campgrounds = await campground.find({});
+  const campgrounds = await CampGround.find({});
   res.render("campgrounds/index", { campgrounds });
+});
+
+app.get("/campgrounds/:id", async (req, res) => { //async= finding corresponding camp ground in DB
+  const { id } = req.params;
+  const campground = await CampGround.findById(req.params.id)
+  res.render('campgrounds/details',{campground})
 });
 
 app.listen(3000, () => {
