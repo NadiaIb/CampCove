@@ -3,7 +3,7 @@ import path from "path";
 import mongoose from "mongoose";
 import CampGround from "./models/campground.js";
 import methodOverride from "method-override"; // forms only send get/post req from the browser, we need this for put/patch/delete
-import campground from "./models/campground.js";
+import ejsMate from "ejs-mate";
 
 main().catch((err) => console.log(err, "connection error"));
 
@@ -15,6 +15,7 @@ async function main() {
 const app = express();
 
 const __dirname = path.resolve(); //path.resolve() ensures that __dirname always represents an absolute path, regardless of how the script is executed or where it is located.
+app.engine("ejs", ejsMate);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(express.urlencoded({ extended: true })); // for POST & PUT : express.urlencoded() is a method inbuilt in express to recognize the incoming Request Object as strings or arrays
@@ -64,11 +65,11 @@ app.put("/campgrounds/:id", async (req, res) => {
   res.redirect(`/campgrounds/${campground._id}`);
 });
 
-app.delete('/campgrounds/:id', async(req,res)=>{
+app.delete("/campgrounds/:id", async (req, res) => {
   const { id } = req.params;
- const campground =  await CampGround.findByIdAndDelete(id)
- res.redirect('/campgrounds')
-})
+  const campground = await CampGround.findByIdAndDelete(id);
+  res.redirect("/campgrounds");
+});
 
 app.listen(3000, () => {
   console.log("Listening on Port 3000");
