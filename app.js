@@ -5,6 +5,8 @@ import CampGround from "./models/campground.js";
 import methodOverride from "method-override"; // forms only send get/post req from the browser, we need this for put/patch/delete
 import ejsMate from "ejs-mate";
 import wrapAsync from "./utils/wrapAsync.js";
+import expressErrorExtended from "./Utils/ExpressError.js";
+const ObjectID = mongoose.Types.ObjectId; //Deal with Cast to ObjectId failed error: when you pass an id which has invalid ObjectId format to the mongoose database query method like .findById().
 
 main().catch((err) => console.log(err, "connection error"));
 
@@ -26,10 +28,13 @@ app.get("/", (req, res) => {
   res.render("home");
 });
 
-app.get("/campgrounds",wrapAsync( async (req, res) => {
-  const campgrounds = await CampGround.find({});
-  res.render("campgrounds/index", { campgrounds });
-}));
+app.get(
+  "/campgrounds",
+  wrapAsync(async (req, res) => {
+    const campgrounds = await CampGround.find({});
+    res.render("campgrounds/index", { campgrounds });
+  })
+);
 
 //this has to be before app.get("/campgrounds/:id" otherwise it will see /new as an id
 // create new campgrounds needs to reqs: one for creating new (form) = get, one for posting to /campgrounds
@@ -41,6 +46,8 @@ app.get("/campgrounds/new", (req, res) => {
 app.post(
   "/campgrounds",
   wrapAsync(async (req, res, next) => {
+    if (!req.body.campground)
+      throw new expressErrorExtended("Invalid Campground Data", 400); //customise errors
     const campground = new CampGround(req.body.campground);
     await campground.save();
     res.redirect(`/campgrounds/${campground._id}`);
@@ -48,35 +55,60 @@ app.post(
 );
 
 //READ
-app.get("/campgrounds/:id", wrapAsync( async (req, res) => {
-  //async= finding corresponding camp ground in DB
-  const { id } = req.params;
-  const campground = await CampGround.findById(req.params.id);
-  res.render("campgrounds/details", { campground });
-}));
+app.get(
+  "/campgrounds/:id",
+  wrapAsync(async (req, res, next) => {
+    //async= finding corresponding camp ground in DB
+    const { id } = req.params;
+    if (!ObjectID.isValid(id)) {
+      return next(new expressErrorExtended("Invalid Id", 400)); //Invalid ObjectId format
+    }
+    const campground = await CampGround.findById(req.params.id);
+    if (!campground) {
+      return next(new expressErrorExtended("Product Not Found", 404)); //Valid id in the ObjectId format but it doesn't exist in the database
+    }
+    res.render("campgrounds/details", { campground });
+  })
+);
 
 //UPDATE
-app.get("/campgrounds/:id/edit", wrapAsync(async (req, res) => {
-  const campground = await CampGround.findById(req.params.id);
-  res.render("campgrounds/edit", { campground });
-}));
+app.get(
+  "/campgrounds/:id/edit",
+  wrapAsync(async (req, res) => {
+    const campground = await CampGround.findById(req.params.id);
+    res.render("campgrounds/edit", { campground });
+  })
+);
 
-app.put("/campgrounds/:id", wrapAsync(async (req, res) => {
-  const { id } = req.params;
-  const campground = await CampGround.findByIdAndUpdate(id, {
-    ...req.body.campground,
-  });
-  res.redirect(`/campgrounds/${campground._id}`);
-}));
+app.put(
+  "/campgrounds/:id",
+  wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    const campground = await CampGround.findByIdAndUpdate(id, {
+      ...req.body.campground,
+    });
+    res.redirect(`/campgrounds/${campground._id}`);
+  })
+);
 
-app.delete("/campgrounds/:id", wrapAsync(async (req, res) => {
-  const { id } = req.params;
-  const campground = await CampGround.findByIdAndDelete(id);
-  res.redirect("/campgrounds");
-}));
+app.delete(
+  "/campgrounds/:id",
+  wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    const campground = await CampGround.findByIdAndDelete(id);
+    res.redirect("/campgrounds");
+  })
+);
+
+//ERROR HANDLERS
+app.all("*", (req, res, next) => {
+  next(new expressErrorExtended("Page Not Found", 404));
+});
 
 app.use((err, req, res, next) => {
-  res.send("Something went wrong");
+  const { statusCode = 500 } = err; //default err code
+  if (!err.message) err.message = "Oh No, Something Went Wrong";
+  res.status(statusCode).render("error.ejs", { err });
 });
 
 app.listen(3000, () => {
