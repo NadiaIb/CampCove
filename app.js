@@ -6,6 +6,7 @@ import methodOverride from "method-override"; // forms only send get/post req fr
 import ejsMate from "ejs-mate";
 import wrapAsync from "./utils/wrapAsync.js";
 import expressErrorExtended from "./Utils/ExpressError.js";
+import Joi from "joi"; //server side validation, define a schema for some data (req.body must have specified values) 
 const ObjectID = mongoose.Types.ObjectId; //Deal with Cast to ObjectId failed error: when you pass an id which has invalid ObjectId format to the mongoose database query method like .findById().
 
 main().catch((err) => console.log(err, "connection error"));
@@ -46,8 +47,20 @@ app.get("/campgrounds/new", (req, res) => {
 app.post(
   "/campgrounds",
   wrapAsync(async (req, res, next) => {
-    if (!req.body.campground)
-      throw new expressErrorExtended("Invalid Campground Data", 400); //customise errors
+    const campgroundSchema = Joi.object({ 
+      campground: Joi.object({ // campground = object with keys on it - campground:{title:'random', price:'23'...}
+        title: Joi.string().required(),
+        price: Joi.number().required().min(0),
+        image: Joi.string().required(),
+        location: Joi.string().required(),
+        description: Joi.string().required(),
+      }).required(),
+    });
+    const result = campgroundSchema.validate(req.body); //pass data through to schema
+    if (result.error) {
+      const msg = result.error.details.map((el) => el.message).join(","); // result.error.details = array, have to map over it
+      throw new expressErrorExtended(msg, 400);
+    }
     const campground = new CampGround(req.body.campground);
     await campground.save();
     res.redirect(`/campgrounds/${campground._id}`);
