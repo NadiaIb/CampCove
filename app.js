@@ -6,7 +6,8 @@ import methodOverride from "method-override"; // forms only send get/post req fr
 import ejsMate from "ejs-mate";
 import wrapAsync from "./utils/wrapAsync.js";
 import expressErrorExtended from "./Utils/ExpressError.js";
-import Joi from "joi"; //server side validation, define a schema for some data (req.body must have specified values) 
+import joiCampgroundSchema from "./schemas.js";
+
 const ObjectID = mongoose.Types.ObjectId; //Deal with Cast to ObjectId failed error: when you pass an id which has invalid ObjectId format to the mongoose database query method like .findById().
 
 main().catch((err) => console.log(err, "connection error"));
@@ -24,6 +25,16 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(express.urlencoded({ extended: true })); // for POST & PUT : express.urlencoded() is a method inbuilt in express to recognize the incoming Request Object as strings or arrays
 app.use(methodOverride("_method"));
+
+const validateCampground = (req, res, next) => {
+  const result = joiCampgroundSchema.validate(req.body); //pass data through to schema
+  if (result.error) {
+    const msg = result.error.details.map((el) => el.message).join(","); // result.error.details = array, have to map over it
+    throw new expressErrorExtended(msg, 400);
+  } else {
+    next();
+  }
+};
 
 app.get("/", (req, res) => {
   res.render("home");
@@ -46,21 +57,8 @@ app.get("/campgrounds/new", (req, res) => {
 
 app.post(
   "/campgrounds",
+  validateCampground,
   wrapAsync(async (req, res, next) => {
-    const campgroundSchema = Joi.object({ 
-      campground: Joi.object({ // campground = object with keys on it - campground:{title:'random', price:'23'...}
-        title: Joi.string().required(),
-        price: Joi.number().required().min(0),
-        image: Joi.string().required(),
-        location: Joi.string().required(),
-        description: Joi.string().required(),
-      }).required(),
-    });
-    const result = campgroundSchema.validate(req.body); //pass data through to schema
-    if (result.error) {
-      const msg = result.error.details.map((el) => el.message).join(","); // result.error.details = array, have to map over it
-      throw new expressErrorExtended(msg, 400);
-    }
     const campground = new CampGround(req.body.campground);
     await campground.save();
     res.redirect(`/campgrounds/${campground._id}`);
@@ -95,7 +93,7 @@ app.get(
 
 app.put(
   "/campgrounds/:id",
-  wrapAsync(async (req, res) => {
+  validateCampground,wrapAsync(async (req, res) => {
     const { id } = req.params;
     const campground = await CampGround.findByIdAndUpdate(id, {
       ...req.body.campground,
