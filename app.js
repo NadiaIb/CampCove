@@ -80,7 +80,9 @@ app.post(
 app.get(
   "/campgrounds/:id",
   wrapAsync(async (req, res, next) => {
-    const campground = await CampGround.findById(req.params.id).populate('reviews');
+    const campground = await CampGround.findById(req.params.id).populate(
+      "reviews"
+    );
     res.render("campgrounds/details", { campground });
     // ERROR HANDLING B4 wrapAsync
     //async= finding corresponding camp ground in DB
@@ -125,7 +127,9 @@ app.delete(
 );
 
 app.post(
-  "/campgrounds/:id/reviews", validateReview, wrapAsync(async (req, res) => {
+  "/campgrounds/:id/reviews",
+  validateReview,
+  wrapAsync(async (req, res) => {
     const { id } = req.params;
     const campground = await CampGround.findById(id);
     const review = new Review(req.body.review);
@@ -133,6 +137,18 @@ app.post(
     await review.save();
     await campground.save();
     res.redirect(`/campgrounds/${campground._id}`);
+  })
+);
+
+app.delete(
+  "/campgrounds/:id/reviews/:reviewId",wrapAsync(async(req, res) => {
+    const {id, reviewId} = req.params;
+    //remove reference id of review from CampGround
+    await CampGround.findByIdAndUpdate(id,{$pull:{reviews:reviewId}}) //mongo way to delete: takes pulls reviewId from reviews array
+    // delete the review
+    await Review.findByIdAndDelete(reviewId)
+    res.redirect(`/campgrounds/${id}`)
+
   })
 );
 
