@@ -1,4 +1,5 @@
-import Joi from "joi";//server side validation, define a schema for some data (req.body must have specified values)
+import Joi from "joi"; //server side validation, define a schema for some data (req.body must have specified values)
+// import campground from "./models/campground";
 
 const joiCampgroundSchema = Joi.object({
   campground: Joi.object({
@@ -10,4 +11,12 @@ const joiCampgroundSchema = Joi.object({
     description: Joi.string().required(),
   }).required(),
 });
-export default joiCampgroundSchema;
+
+const joiReviewSchema = Joi.object({
+  review: Joi.object({
+    rating: Joi.number().required().min(1).max(5),
+    body: Joi.string().required(),
+  }).required(),
+});
+
+export  { joiCampgroundSchema, joiReviewSchema };

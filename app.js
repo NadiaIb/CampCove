@@ -6,7 +6,7 @@ import methodOverride from "method-override"; // forms only send get/post req fr
 import ejsMate from "ejs-mate";
 import wrapAsync from "./utils/wrapAsync.js";
 import expressErrorExtended from "./Utils/ExpressError.js";
-import joiCampgroundSchema from "./schemas.js";
+import { joiCampgroundSchema, joiReviewSchema } from "./schemas.js";
 import Review from "./models/review.js";
 
 const ObjectID = mongoose.Types.ObjectId; //Deal with Cast to ObjectId failed error: when you pass an id which has invalid ObjectId format to the mongoose database query method like .findById().
@@ -29,6 +29,16 @@ app.use(methodOverride("_method"));
 
 const validateCampground = (req, res, next) => {
   const result = joiCampgroundSchema.validate(req.body); //pass data through to schema
+  if (result.error) {
+    const msg = result.error.details.map((el) => el.message).join(","); // result.error.details = array, have to map over it
+    throw new expressErrorExtended(msg, 400);
+  } else {
+    next();
+  }
+};
+
+const validateReview = (req, res, next) => {
+  const result = joiReviewSchema.validate(req.body);
   if (result.error) {
     const msg = result.error.details.map((el) => el.message).join(","); // result.error.details = array, have to map over it
     throw new expressErrorExtended(msg, 400);
@@ -114,8 +124,7 @@ app.delete(
 );
 
 app.post(
-  "/campgrounds/:id/reviews",
-  wrapAsync(async (req, res) => {
+  "/campgrounds/:id/reviews", validateReview, wrapAsync(async (req, res) => {
     const { id } = req.params;
     const campground = await CampGround.findById(id);
     const review = new Review(req.body.review);
