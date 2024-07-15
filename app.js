@@ -146,7 +146,7 @@ app.delete(
     //remove reference id of review from CampGround
     await CampGround.findByIdAndUpdate(id,{$pull:{reviews:reviewId}}) //mongo way to delete: takes pulls reviewId from reviews array
     // delete the review
-    await Review.findByIdAndDelete(reviewId)
+    await Review.findByIdAndDelete(reviewId) //use middleware in models/campgrounds.js 
     res.redirect(`/campgrounds/${id}`)
 
   })

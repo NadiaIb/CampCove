@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import Review from './review.js'
 const {Schema} = mongoose 
 
 const CampgroundSchema = new Schema({
@@ -15,5 +16,16 @@ const CampgroundSchema = new Schema({
   ]
 })
 
+// Campground only contains reviewid REFERENCE so we need to use Mongoose middleware (post) to execute after findOneAndDelete operation on Campground is complete
+CampgroundSchema.post('findOneAndDelete', async function(doc){
+  if(doc){
+    await Review.deleteMany({
+      _id:{
+        $in: doc.reviews
+      }
+    })
+  }
+})
+
 export default mongoose.model('Campground',CampgroundSchema)
-// collection in yelp-camp = campgrounds
+// collection in camp-camp = campgrounds
