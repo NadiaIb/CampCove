@@ -7,6 +7,7 @@ import ejsMate from "ejs-mate";
 import wrapAsync from "./utils/wrapAsync.js";
 import expressErrorExtended from "./Utils/ExpressError.js";
 import joiCampgroundSchema from "./schemas.js";
+import Review from "./models/review.js";
 
 const ObjectID = mongoose.Types.ObjectId; //Deal with Cast to ObjectId failed error: when you pass an id which has invalid ObjectId format to the mongoose database query method like .findById().
 
@@ -93,7 +94,8 @@ app.get(
 
 app.put(
   "/campgrounds/:id",
-  validateCampground,wrapAsync(async (req, res) => {
+  validateCampground,
+  wrapAsync(async (req, res) => {
     const { id } = req.params;
     const campground = await CampGround.findByIdAndUpdate(id, {
       ...req.body.campground,
@@ -108,6 +110,19 @@ app.delete(
     const { id } = req.params;
     const campground = await CampGround.findByIdAndDelete(id);
     res.redirect("/campgrounds");
+  })
+);
+
+app.post(
+  "/campgrounds/:id/reviews",
+  wrapAsync(async (req, res) => {
+    const { id } = req.params;
+    const campground = await CampGround.findById(id);
+    const review = new Review(req.body.review);
+    campground.reviews.push(review); // push reviews onto reviews property in campground model
+    await review.save();
+    await campground.save();
+    res.redirect(`/campgrounds/${campground._id}`);
   })
 );
 
