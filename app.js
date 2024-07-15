@@ -80,16 +80,17 @@ app.post(
 app.get(
   "/campgrounds/:id",
   wrapAsync(async (req, res, next) => {
-    //async= finding corresponding camp ground in DB
-    const { id } = req.params;
-    if (!ObjectID.isValid(id)) {
-      return next(new expressErrorExtended("Invalid Id", 400)); //Invalid ObjectId format
-    }
-    const campground = await CampGround.findById(req.params.id);
-    if (!campground) {
-      return next(new expressErrorExtended("Product Not Found", 404)); //Valid id in the ObjectId format but it doesn't exist in the database
-    }
+    const campground = await CampGround.findById(req.params.id).populate('reviews');
     res.render("campgrounds/details", { campground });
+    // ERROR HANDLING B4 wrapAsync
+    //async= finding corresponding camp ground in DB
+    // const { id } = req.params;
+    // if (!ObjectID.isValid(id)) {
+    //   return next(new expressErrorExtended("Invalid Id", 400)); //Invalid ObjectId format
+    // }
+    // if (!campground) {
+    //   return next(new expressErrorExtended("Product Not Found", 404)); //Valid id in the ObjectId format but it doesn't exist in the database
+    // }
   })
 );
 
