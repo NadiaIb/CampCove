@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import ejsMate from "ejs-mate";
 import expressErrorExtended from "./Utils/ExpressError.js";
 import methodOverride from "method-override"; // forms only send get/post req from the browser, we need this for put/patch/delete
+import session from "express-session";
 
 import campgrounds from "./routes/campgrounds.js";
 import reviews from "./routes/reviews.js";
@@ -25,6 +26,20 @@ app.use(express.urlencoded({ extended: true })); // for POST & PUT : express.url
 app.use(methodOverride("_method"));
 app.use(express.static(path.join(__dirname, "public"))); // serve public directory
 
+//SESSIONS
+const sessionConfig = {
+  secret: 'secretPassword',
+  resave: false,
+  saveUninitialized: true,
+  cookie:{
+    httpOnly:true, 
+    expires: Date.now() + 1000 * 60 * 60 * 24 * 7, //expire after a week
+    maxAge: 1000 * 60 * 60 * 24 * 7,
+  }
+}
+app.use(session(sessionConfig))
+
+//ROUTES
 app.use("/campgrounds", campgrounds);
 app.use("/campgrounds/:id/reviews", reviews);
 
