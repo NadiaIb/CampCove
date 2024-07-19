@@ -1,15 +1,12 @@
 import express, { urlencoded } from "express"; // add 'type':'module' to package.json
 import path from "path";
 import mongoose from "mongoose";
-import CampGround from "./models/campground.js";
-import methodOverride from "method-override"; // forms only send get/post req from the browser, we need this for put/patch/delete
 import ejsMate from "ejs-mate";
-import wrapAsync from "./utils/wrapAsync.js";
 import expressErrorExtended from "./Utils/ExpressError.js";
-import {joiReviewSchema } from "./schemas.js";
-import Review from "./models/review.js";
+import methodOverride from "method-override"; // forms only send get/post req from the browser, we need this for put/patch/delete
 
-import campgrounds from './routes/campgrounds.js'
+import campgrounds from "./routes/campgrounds.js";
+import reviews from "./routes/reviews.js";
 
 main().catch((err) => console.log(err, "connection error"));
 
@@ -27,50 +24,13 @@ app.set("views", path.join(__dirname, "views"));
 app.use(express.urlencoded({ extended: true })); // for POST & PUT : express.urlencoded() is a method inbuilt in express to recognize the incoming Request Object as strings or arrays
 app.use(methodOverride("_method"));
 
-
-const validateReview = (req, res, next) => {
-  const result = joiReviewSchema.validate(req.body);
-  if (result.error) {
-    const msg = result.error.details.map((el) => el.message).join(","); // result.error.details = array, have to map over it
-    throw new expressErrorExtended(msg, 400);
-  } else {
-    next();
-  }
-};
-
-app.use('/campgrounds', campgrounds)
+app.use("/campgrounds", campgrounds);
+app.use("/campgrounds/:id/reviews", reviews);
 
 app.get("/", (req, res) => {
   res.render("home");
 });
 
-
-
-app.post(
-  "/campgrounds/:id/reviews",
-  validateReview,
-  wrapAsync(async (req, res) => {
-    const { id } = req.params;
-    const campground = await CampGround.findById(id);
-    const review = new Review(req.body.review);
-    campground.reviews.push(review); // push reviews onto reviews property in campground model
-    await review.save();
-    await campground.save();
-    res.redirect(`/campgrounds/${campground._id}`);
-  })
-);
-
-app.delete(
-  "/campgrounds/:id/reviews/:reviewId",wrapAsync(async(req, res) => {
-    const {id, reviewId} = req.params;
-    //remove reference id of review from CampGround
-    await CampGround.findByIdAndUpdate(id,{$pull:{reviews:reviewId}}) //mongo way to delete: takes pulls reviewId from reviews array
-    // delete the review
-    await Review.findByIdAndDelete(reviewId) //use middleware in models/campgrounds.js 
-    res.redirect(`/campgrounds/${id}`)
-
-  })
-);
 
 //ERROR HANDLERS
 app.all("*", (req, res, next) => {
