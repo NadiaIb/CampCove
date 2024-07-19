@@ -5,6 +5,7 @@ import ejsMate from "ejs-mate";
 import expressErrorExtended from "./Utils/ExpressError.js";
 import methodOverride from "method-override"; // forms only send get/post req from the browser, we need this for put/patch/delete
 import session from "express-session";
+import flash from 'connect-flash'
 
 import campgrounds from "./routes/campgrounds.js";
 import reviews from "./routes/reviews.js";
@@ -38,6 +39,13 @@ const sessionConfig = {
   }
 }
 app.use(session(sessionConfig))
+app.use(flash())
+
+app.use((req,res,next)=>{
+  res.locals.success = req.flash('success')
+  res.locals.error = req.flash('error')
+  next()
+})
 
 //ROUTES
 app.use("/campgrounds", campgrounds);

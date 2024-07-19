@@ -28,6 +28,7 @@ router.post(
     campground.reviews.push(review); // push reviews onto reviews property in campground model
     await review.save();
     await campground.save();
+    req.flash('success', 'Created new review!')
     res.redirect(`/campgrounds/${campground._id}`);
   })
 );
@@ -40,6 +41,7 @@ router.delete(
     await CampGround.findByIdAndUpdate(id, { $pull: { reviews: reviewId } }); //mongo way to delete: takes pulls reviewId from reviews array
     // delete the review
     await Review.findByIdAndDelete(reviewId); //use middleware in models/campgrounds.js
+    req.flash('success', 'Successfully deleted review!')
     res.redirect(`/campgrounds/${id}`);
   })
 );
